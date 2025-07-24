@@ -78,7 +78,7 @@ The scraper uses Chrome in headless mode:
 from selenium.webdriver.chrome.options import Options
 
 chrome_opts = Options()
-chrome_opts.add_argument("--headless=new")
+chrome_opts.add_argument("--headless=new") 
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_opts)
 ```
