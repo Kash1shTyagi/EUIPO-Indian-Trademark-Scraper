@@ -1,25 +1,58 @@
 import logging
+import time
+import os
+import re
+import pandas as pd
+from openpyxl import load_workbook
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-import time
-import pandas as pd
-import re
 from selenium.common.exceptions import StaleElementReferenceException
-import os
-from openpyxl import load_workbook
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 chrome_opts = Options()
-chrome_opts.add_argument("--headless")  
+chrome_opts.add_argument("--headless=new")
+chrome_opts.add_argument("--remote-allow-origins=*")
+chrome_opts.add_argument("--no-sandbox")
+chrome_opts.add_argument("--disable-dev-shm-usage")
+chrome_opts.add_argument("--disable-gpu")
+chrome_opts.add_argument("--window-size=1920,1080")
+chrome_opts.add_argument("--disable-blink-features=AutomationControlled")
+chrome_opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+chrome_opts.add_experimental_option("useAutomationExtension", False)
+chrome_opts.add_argument(
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/138.0.7204.169 Safari/537.36"
+)
 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_opts)
-driver.get("https://euipo.europa.eu/ec2/search/find?language=en&text=&niceClass=1&size=25&page=1&harmonised=true&searchMode=WORDSPREFIX&sortBy=relevance")
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=chrome_opts)
+
+driver.execute_cdp_cmd(
+    "Page.addScriptToEvaluateOnNewDocument",
+    {"source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"}
+)
+driver.execute_cdp_cmd(
+    "Runtime.evaluate",
+    {"expression": (
+        "Object.defineProperty(navigator, 'languages', { get: () => ['en-US','en'] });"
+        "+Object.defineProperty(Intl, 'DateTimeFormat', {value: class { constructor() {} "
+        "resolvedOptions() { return { timeZone: 'Europe/Amsterdam' }; } }});"
+    )}
+)
+
+base_url = (
+    "https://euipo.europa.eu/ec2/search/find?language=en&text=&niceClass=1"
+    "&size=25&page=1&harmonised=true&searchMode=WORDSPREFIX&sortBy=relevance"
+)
+driver.get(base_url)
+logging.info("Page loaded.")
 
 # Wait for modal and try to close it
 time.sleep(1)
